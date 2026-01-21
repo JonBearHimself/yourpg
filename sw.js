@@ -1,15 +1,15 @@
 // YOURPG Service Worker
-const CACHE_NAME = 'yourpg-v1';
+const CACHE_NAME = 'yourpg-v2';
 const ASSETS_TO_CACHE = [
-    '/',
-    '/index.html',
-    '/styles.css',
-    '/app.js',
-    '/manifest.json',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png',
-    '/audio/sfx_expup.ogg',
-    '/audio/sfx_expdown.ogg'
+    './',
+    './index.html',
+    './styles.css',
+    './app.js',
+    './manifest.json',
+    './icons/icon-192.png',
+    './icons/icon-512.png',
+    './audio/sfx_expup.ogg',
+    './audio/sfx_expdown.ogg'
 ];
 
 // Install event - cache assets

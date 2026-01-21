@@ -2,7 +2,7 @@
     "name": "YOURPG - Gamified Self-Improvement",
     "short_name": "YOURPG",
     "description": "Track personal habits through an EXP/leveling system. Gain EXP for good habits, lose EXP for bad habits.",
-    "start_url": "/",
+    "start_url": "./",
     "display": "standalone",
     "background_color": "#1a1a2e",
     "theme_color": "#1a1a2e",
