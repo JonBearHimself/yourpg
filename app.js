@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeUI();
     setupEventListeners();
     registerServiceWorker();
-    requestNotificationPermission();
+    initNotificationStatus();
     scheduleNotifications();
     // Check for pending boss battles after a short delay
     setTimeout(checkPendingBossBattles, 1000);
@@ -597,8 +597,61 @@ function resetDayExp() {
 // ============================================
 
 function requestNotificationPermission() {
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
+    if (!('Notification' in window)) {
+        updateNotificationButton('Not Supported');
+        return;
+    }
+
+    if (Notification.permission === 'granted') {
+        updateNotificationButton('Enabled');
+        scheduleNotifications();
+        return;
+    }
+
+    if (Notification.permission === 'denied') {
+        updateNotificationButton('Blocked');
+        return;
+    }
+
+    // Request permission (must be triggered by user action on iOS)
+    Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+            updateNotificationButton('Enabled');
+            scheduleNotifications();
+            // Send a test notification
+            new Notification('YOURPG', {
+                body: 'Notifications enabled! You\'ll receive autopilot breakers.',
+                icon: './icons/icon-192.png'
+            });
+        } else {
+            updateNotificationButton('Denied');
+        }
+    });
+}
+
+function updateNotificationButton(status) {
+    const btn = document.getElementById('requestNotifBtn');
+    if (!btn) return;
+
+    btn.textContent = status;
+    btn.disabled = status !== 'Enable';
+
+    if (status === 'Enabled') {
+        btn.classList.add('success');
+    } else if (status === 'Blocked' || status === 'Denied' || status === 'Not Supported') {
+        btn.classList.add('disabled');
+    }
+}
+
+function initNotificationStatus() {
+    if (!('Notification' in window)) {
+        updateNotificationButton('Not Supported');
+    } else if (Notification.permission === 'granted') {
+        updateNotificationButton('Enabled');
+    } else if (Notification.permission === 'denied') {
+        updateNotificationButton('Blocked');
+    } else {
+        updateNotificationButton('Enable');
     }
 }
 
@@ -696,6 +749,11 @@ function setupEventListeners() {
         appData.settings.notificationFrequency = parseInt(e.target.value);
         saveData();
         scheduleNotifications();
+    });
+
+    // Notification permission button (required for iOS)
+    document.getElementById('requestNotifBtn').addEventListener('click', () => {
+        requestNotificationPermission();
     });
 
     // Settings actions

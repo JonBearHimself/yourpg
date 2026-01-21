@@ -478,6 +478,23 @@ html, body {
     background: var(--danger);
 }
 
+.action-btn.small {
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+.action-btn.success {
+    background: var(--success);
+    cursor: default;
+}
+
+.action-btn.disabled {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: default;
+    opacity: 0.6;
+}
+
 /* Pro Modal */
 .pro-features {
     display: flex;
