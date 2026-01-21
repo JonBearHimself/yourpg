@@ -103,6 +103,35 @@
                         <option value="120">Every 2 hours</option>
                     </select>
                 </div>
+                <div class="settings-divider">Boss Battle Schedule</div>
+                <div class="setting-item">
+                    <label for="dailyBossTime">Daily Boss Time</label>
+                    <select id="dailyBossTime">
+                        <option value="18">6:00 PM</option>
+                        <option value="19">7:00 PM</option>
+                        <option value="20">8:00 PM</option>
+                        <option value="21" selected>9:00 PM</option>
+                        <option value="22">10:00 PM</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="weeklyBossDay">Weekly Boss Day</label>
+                    <select id="weeklyBossDay">
+                        <option value="0" selected>Sunday</option>
+                        <option value="1">Monday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="monthlyBossDay">Monthly Boss Day</label>
+                    <select id="monthlyBossDay">
+                        <option value="last" selected>Last day</option>
+                        <option value="1">1st</option>
+                        <option value="15">15th</option>
+                        <option value="28">28th</option>
+                    </select>
+                </div>
                 <div class="setting-actions">
                     <button id="resetDayBtn" class="action-btn warning">Reset Today's EXP</button>
                     <button id="viewHistoryBtn" class="action-btn">View History</button>
@@ -213,19 +242,17 @@
         </div>
     </div>
 
-    <!-- Boss Reminder Modal -->
-    <div id="bossReminderModal" class="modal">
+    <!-- Boss Reminder Modal (mandatory - no close button) -->
+    <div id="bossReminderModal" class="modal mandatory">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Boss Battles Await!</h2>
-                <button class="close-btn" data-close="bossReminderModal">&times;</button>
             </div>
             <div class="modal-body">
-                <p class="reminder-text">You have pending boss battles. Tap to begin:</p>
+                <p class="reminder-text">Complete your boss battles to continue:</p>
                 <div id="pendingBattlesList" class="pending-battles">
                     <!-- Populated dynamically -->
                 </div>
-                <button class="later-btn" data-close="bossReminderModal">Later</button>
             </div>
         </div>
     </div>

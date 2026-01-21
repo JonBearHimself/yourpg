@@ -21,7 +21,10 @@ const DEFAULT_DATA = {
     settings: {
         soundEnabled: true,
         notificationsEnabled: true,
-        notificationFrequency: 60
+        notificationFrequency: 60,
+        dailyBossTime: 21,      // 9 PM
+        weeklyBossDay: 0,       // Sunday
+        monthlyBossDay: 'last'  // Last day of month
     },
     isPro: false
 };
@@ -203,6 +206,8 @@ function initializeUI() {
 // Automatic Boss Battle Triggers
 // ============================================
 
+let pendingBossBattles = [];
+
 function checkPendingBossBattles() {
     const now = new Date();
     const hour = now.getHours();
@@ -210,31 +215,49 @@ function checkPendingBossBattles() {
     const dayOfMonth = now.getDate();
     const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
 
+    // Get custom times from settings
+    const dailyTime = appData.settings.dailyBossTime || 21;
+    const weeklyDay = appData.settings.weeklyBossDay || 0;
+    const monthlyDay = appData.settings.monthlyBossDay || 'last';
+
     // Collect pending battles
-    const pendingBattles = [];
+    pendingBossBattles = [];
 
-    // Daily boss - available after 6 PM (18:00)
-    if (!appData.dailyBossCompleted && hour >= 18) {
-        pendingBattles.push('daily');
+    // Daily boss - available after custom time
+    if (!appData.dailyBossCompleted && hour >= dailyTime) {
+        pendingBossBattles.push('daily');
     }
 
-    // Weekly boss - available on Sunday after 6 PM
-    if (!appData.weeklyBossCompleted && dayOfWeek === 0 && hour >= 18) {
-        pendingBattles.push('weekly');
+    // Weekly boss - available on custom day after daily boss time
+    if (!appData.weeklyBossCompleted && dayOfWeek === parseInt(weeklyDay) && hour >= dailyTime) {
+        pendingBossBattles.push('weekly');
     }
 
-    // Monthly boss - available on last day of month after 6 PM
-    if (!appData.monthlyBossCompleted && dayOfMonth === lastDayOfMonth && hour >= 18) {
-        pendingBattles.push('monthly');
+    // Monthly boss - available on custom day after daily boss time
+    const monthlyDayNum = monthlyDay === 'last' ? lastDayOfMonth : parseInt(monthlyDay);
+    if (!appData.monthlyBossCompleted && dayOfMonth === monthlyDayNum && hour >= dailyTime) {
+        pendingBossBattles.push('monthly');
     }
+
+    // Update EXP buttons state
+    updateExpButtonsState();
 
     // Show reminder if there are pending battles
-    if (pendingBattles.length > 0) {
-        showBossReminder(pendingBattles);
+    if (pendingBossBattles.length > 0) {
+        showBossReminder(pendingBossBattles);
     }
 }
 
-function showBossReminder(pendingBattles) {
+function updateExpButtonsState() {
+    const expButtons = document.querySelectorAll('.exp-btn');
+    if (pendingBossBattles.length > 0) {
+        expButtons.forEach(btn => btn.classList.add('blocked'));
+    } else {
+        expButtons.forEach(btn => btn.classList.remove('blocked'));
+    }
+}
+
+function showBossReminder(battles) {
     const reminderModal = document.getElementById('bossReminderModal');
     if (!reminderModal) return;
 
@@ -245,7 +268,7 @@ function showBossReminder(pendingBattles) {
         monthly: '👹 Monthly Boss Battle'
     };
 
-    battleList.innerHTML = pendingBattles.map(type =>
+    battleList.innerHTML = battles.map(type =>
         `<div class="pending-battle" data-type="${type}">${battleNames[type]}</div>`
     ).join('');
 
@@ -338,6 +361,9 @@ function updateSettingsUI() {
     document.getElementById('soundToggle').checked = appData.settings.soundEnabled;
     document.getElementById('notificationToggle').checked = appData.settings.notificationsEnabled;
     document.getElementById('notificationFreq').value = appData.settings.notificationFrequency;
+    document.getElementById('dailyBossTime').value = appData.settings.dailyBossTime || 21;
+    document.getElementById('weeklyBossDay').value = appData.settings.weeklyBossDay || 0;
+    document.getElementById('monthlyBossDay').value = appData.settings.monthlyBossDay || 'last';
 }
 
 function animateExpChange(element) {
@@ -501,6 +527,10 @@ function completeBossBattle() {
 
     // Update boss buttons
     updateBossButtons();
+
+    // Remove completed boss from pending list and unblock EXP buttons
+    pendingBossBattles = pendingBossBattles.filter(b => b !== currentBossType);
+    updateExpButtonsState();
 
     // Show completion modal
     const resultExp = document.getElementById('resultExp');
@@ -707,9 +737,14 @@ function registerServiceWorker() {
 // ============================================
 
 function setupEventListeners() {
-    // EXP Buttons
+    // EXP Buttons - check for pending boss battles first
     document.querySelectorAll('.exp-btn').forEach(btn => {
         btn.addEventListener('click', () => {
+            // If boss battles are pending, show reminder instead
+            if (pendingBossBattles.length > 0) {
+                showBossReminder(pendingBossBattles);
+                return;
+            }
             const exp = parseInt(btn.dataset.exp);
             addExp(exp);
         });
@@ -770,10 +805,10 @@ function setupEventListeners() {
         });
     });
 
-    // Close modal on backdrop click
+    // Close modal on backdrop click (except mandatory modals)
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
+            if (e.target === modal && !modal.classList.contains('mandatory')) {
                 closeModal(modal.id);
             }
         });
@@ -783,11 +818,27 @@ function setupEventListeners() {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             document.querySelectorAll('.modal.active').forEach(modal => {
-                // Don't close boss battle modal with escape
-                if (modal.id !== 'bossModal') {
+                // Don't close mandatory modals or boss battle modal with escape
+                if (modal.id !== 'bossModal' && modal.id !== 'bossReminderModal') {
                     closeModal(modal.id);
                 }
             });
         }
+    });
+
+    // Boss schedule settings
+    document.getElementById('dailyBossTime').addEventListener('change', (e) => {
+        appData.settings.dailyBossTime = parseInt(e.target.value);
+        saveData();
+    });
+
+    document.getElementById('weeklyBossDay').addEventListener('change', (e) => {
+        appData.settings.weeklyBossDay = parseInt(e.target.value);
+        saveData();
+    });
+
+    document.getElementById('monthlyBossDay').addEventListener('change', (e) => {
+        appData.settings.monthlyBossDay = e.target.value;
+        saveData();
     });
 }
