@@ -324,7 +324,9 @@ function updateExpDisplay() {
 }
 
 function updateTotalExpDisplay() {
-    document.getElementById('totalExpDisplay').textContent = appData.totalExp.toLocaleString();
+    // Total EXP is now shown in My Month modal, no main screen element
+    const el = document.getElementById('totalExpDisplay');
+    if (el) el.textContent = appData.totalExp.toLocaleString();
 }
 
 function updateLevelDisplay() {
@@ -570,32 +572,120 @@ function closeModal(modalId) {
 }
 
 // ============================================
-// History
+// My Month / Calendar
 // ============================================
 
-function showHistory() {
-    const historyList = document.getElementById('historyList');
+function showMyMonth() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
 
-    if (appData.history.length === 0) {
-        historyList.innerHTML = '<div class="empty-state">No history yet. Start gaining EXP!</div>';
-    } else {
-        historyList.innerHTML = appData.history.map(item => `
-            <div class="history-item">
-                <span class="history-date">${formatDate(item.date)}</span>
-                <span class="history-exp ${item.exp >= 0 ? 'positive' : 'negative'}">
-                    ${item.exp >= 0 ? '+' : ''}${item.exp} EXP
-                </span>
-                <span class="history-rating ${item.rating.toLowerCase()}">${item.rating}</span>
-            </div>
-        `).join('');
+    // Update title
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'];
+    document.getElementById('monthTitle').textContent = `${monthNames[month]} ${year}`;
+
+    // Update stats
+    document.getElementById('totalExpStat').textContent = appData.totalExp.toLocaleString();
+    document.getElementById('levelStat').textContent = appData.level;
+    document.getElementById('streakStat').textContent = calculateStreak();
+
+    // Build calendar
+    const calendarGrid = document.getElementById('calendarGrid');
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = now.getDate();
+
+    // Create history lookup by date
+    const historyMap = {};
+    appData.history.forEach(item => {
+        historyMap[item.date] = item;
+    });
+
+    // Add today's data to map
+    const todayStr = getDateString();
+    if (appData.currentDayExp !== 0) {
+        historyMap[todayStr] = {
+            date: todayStr,
+            exp: appData.currentDayExp,
+            rating: appData.currentDayExp > 0 ? 'HERO' : 'WORM'
+        };
     }
 
-    openModal('historyModal');
+    let html = '';
+
+    // Empty cells before first day
+    for (let i = 0; i < firstDay; i++) {
+        html += '<div class="calendar-day empty"></div>';
+    }
+
+    // Days of month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayData = historyMap[dateStr];
+
+        let classes = 'calendar-day';
+        if (day === today) classes += ' today';
+        if (day > today) classes += ' future';
+
+        if (dayData) {
+            if (dayData.rating === 'HERO' || dayData.exp > 0) {
+                classes += ' hero';
+            } else if (dayData.rating === 'WORM' || dayData.exp < 0) {
+                classes += ' worm';
+            } else {
+                classes += ' neutral-day';
+            }
+        }
+
+        html += `<div class="${classes}">${day}</div>`;
+    }
+
+    calendarGrid.innerHTML = html;
+    openModal('myMonthModal');
 }
 
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+function calculateStreak() {
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check if today is a hero day
+    if (appData.currentDayExp > 0) {
+        streak = 1;
+    } else if (appData.currentDayExp <= 0 && appData.currentDayExp !== 0) {
+        // Today is a worm day, streak broken
+        return 0;
+    }
+
+    // Check history backwards
+    const sortedHistory = [...appData.history].sort((a, b) =>
+        new Date(b.date) - new Date(a.date)
+    );
+
+    let expectedDate = new Date(today);
+    if (streak === 1 || appData.currentDayExp === 0) {
+        expectedDate.setDate(expectedDate.getDate() - 1);
+    }
+
+    for (const item of sortedHistory) {
+        const itemDate = new Date(item.date);
+        itemDate.setHours(0, 0, 0, 0);
+
+        // Check if this is the expected date
+        if (itemDate.getTime() === expectedDate.getTime()) {
+            if (item.rating === 'HERO' || item.exp > 0) {
+                streak++;
+                expectedDate.setDate(expectedDate.getDate() - 1);
+            } else {
+                break; // Streak broken
+            }
+        } else if (itemDate < expectedDate) {
+            break; // Gap in history, streak broken
+        }
+    }
+
+    return streak;
 }
 
 // ============================================
@@ -765,6 +855,9 @@ function setupEventListeners() {
     // Pro Button
     document.getElementById('proBtn').addEventListener('click', () => openModal('proModal'));
 
+    // My Month Button
+    document.getElementById('myMonthBtn').addEventListener('click', showMyMonth);
+
     // Settings toggles
     document.getElementById('soundToggle').addEventListener('change', (e) => {
         appData.settings.soundEnabled = e.target.checked;
@@ -795,7 +888,7 @@ function setupEventListeners() {
     document.getElementById('resetDayBtn').addEventListener('click', resetDayExp);
     document.getElementById('viewHistoryBtn').addEventListener('click', () => {
         closeModal('settingsModal');
-        showHistory();
+        showMyMonth();
     });
 
     // Close buttons

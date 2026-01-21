@@ -32,20 +32,14 @@
         </header>
 
         <!-- EXP Display -->
-        <div class="exp-section">
+        <div class="exp-section compact">
             <div class="exp-label">TODAY'S EXP</div>
             <div id="expDisplay" class="exp-value">0</div>
             <div id="statusBadge" class="status-badge neutral">NEUTRAL</div>
         </div>
 
-        <!-- Total EXP -->
-        <div class="total-exp-section">
-            <span class="total-label">TOTAL EXP:</span>
-            <span id="totalExpDisplay" class="total-value">0</span>
-        </div>
-
         <!-- EXP Buttons -->
-        <div class="exp-buttons">
+        <div class="exp-buttons compact">
             <button class="exp-btn gold large" data-exp="50">+50 EXP</button>
             <button class="exp-btn gold" data-exp="10">+10 EXP</button>
             <button class="exp-btn purple" data-exp="-10">-10 EXP</button>
@@ -53,20 +47,25 @@
         </div>
 
         <!-- Boss Battle Buttons -->
-        <div class="boss-section">
+        <div class="boss-section compact">
             <button id="dailyBossBtn" class="boss-btn">
                 <span class="boss-icon">⚔️</span>
-                <span class="boss-text">Daily Boss</span>
+                <span class="boss-text">Daily</span>
             </button>
             <button id="weeklyBossBtn" class="boss-btn">
                 <span class="boss-icon">🐉</span>
-                <span class="boss-text">Weekly Boss</span>
+                <span class="boss-text">Weekly</span>
             </button>
             <button id="monthlyBossBtn" class="boss-btn">
                 <span class="boss-icon">👹</span>
-                <span class="boss-text">Monthly Boss</span>
+                <span class="boss-text">Monthly</span>
             </button>
         </div>
+
+        <!-- My Month Button -->
+        <button id="myMonthBtn" class="my-month-btn">
+            <span>📅</span> My Month
+        </button>
     </div>
 
     <!-- Settings Modal -->
@@ -134,7 +133,7 @@
                 </div>
                 <div class="setting-actions">
                     <button id="resetDayBtn" class="action-btn warning">Reset Today's EXP</button>
-                    <button id="viewHistoryBtn" class="action-btn">View History</button>
+                    <button id="viewHistoryBtn" class="action-btn">View Calendar</button>
                 </div>
             </div>
         </div>
@@ -215,16 +214,43 @@
         </div>
     </div>
 
-    <!-- History Modal -->
-    <div id="historyModal" class="modal">
+    <!-- My Month Modal -->
+    <div id="myMonthModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>History</h2>
-                <button class="close-btn" data-close="historyModal">&times;</button>
+                <h2 id="monthTitle">January 2026</h2>
+                <button class="close-btn" data-close="myMonthModal">&times;</button>
             </div>
             <div class="modal-body">
-                <div id="historyList" class="history-list">
-                    <!-- History items will be populated here -->
+                <!-- Stats Row -->
+                <div class="month-stats">
+                    <div class="stat-box">
+                        <div class="stat-value" id="totalExpStat">0</div>
+                        <div class="stat-label">Total EXP</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="streakStat">0</div>
+                        <div class="stat-label">Day Streak</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="levelStat">1</div>
+                        <div class="stat-label">Level</div>
+                    </div>
+                </div>
+                <!-- Calendar -->
+                <div class="calendar">
+                    <div class="calendar-header">
+                        <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                    </div>
+                    <div id="calendarGrid" class="calendar-grid">
+                        <!-- Days populated dynamically -->
+                    </div>
+                </div>
+                <!-- Legend -->
+                <div class="calendar-legend">
+                    <span class="legend-item"><span class="legend-dot hero"></span> Hero</span>
+                    <span class="legend-item"><span class="legend-dot worm"></span> Worm</span>
+                    <span class="legend-item"><span class="legend-dot neutral"></span> Neutral</span>
                 </div>
             </div>
         </div>
