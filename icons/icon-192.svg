@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" fill="#1a1a2e"/>
+  <circle cx="96" cy="80" r="40" fill="#ffd700"/>
+  <polygon points="96,30 106,60 138,60 112,78 122,110 96,90 70,110 80,78 54,60 86,60" fill="#1a1a2e"/>
+  <text x="96" y="160" text-anchor="middle" fill="#ffd700" font-family="Arial Black, sans-serif" font-size="28" font-weight="bold">RPG</text>
+</svg>

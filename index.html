@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="description" content="YOURPG - Gamified Self-Improvement App">
+    <title>YOURPG</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Main Screen -->
+    <div id="app" class="screen active">
+        <!-- Header -->
+        <header class="header">
+            <button id="settingsBtn" class="header-btn" aria-label="Settings">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                </svg>
+            </button>
+            <div class="title-section">
+                <h1 class="app-title">YOURPG</h1>
+                <div class="level-display">Level <span id="levelNum">1</span></div>
+            </div>
+            <button id="proBtn" class="header-btn" aria-label="Pro Features">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/>
+                </svg>
+            </button>
+        </header>
+
+        <!-- EXP Display -->
+        <div class="exp-section">
+            <div class="exp-label">TODAY'S EXP</div>
+            <div id="expDisplay" class="exp-value">0</div>
+            <div id="statusBadge" class="status-badge neutral">NEUTRAL</div>
+        </div>
+
+        <!-- Total EXP -->
+        <div class="total-exp-section">
+            <span class="total-label">TOTAL EXP:</span>
+            <span id="totalExpDisplay" class="total-value">0</span>
+        </div>
+
+        <!-- EXP Buttons -->
+        <div class="exp-buttons">
+            <button class="exp-btn gold large" data-exp="50">+50 EXP</button>
+            <button class="exp-btn gold" data-exp="10">+10 EXP</button>
+            <button class="exp-btn purple" data-exp="-10">-10 EXP</button>
+            <button class="exp-btn purple large" data-exp="-50">-50 EXP</button>
+        </div>
+
+        <!-- Boss Battle Buttons -->
+        <div class="boss-section">
+            <button id="dailyBossBtn" class="boss-btn">
+                <span class="boss-icon">⚔️</span>
+                <span class="boss-text">Daily Boss</span>
+            </button>
+            <button id="weeklyBossBtn" class="boss-btn">
+                <span class="boss-icon">🐉</span>
+                <span class="boss-text">Weekly Boss</span>
+            </button>
+            <button id="monthlyBossBtn" class="boss-btn">
+                <span class="boss-icon">👹</span>
+                <span class="boss-text">Monthly Boss</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="close-btn" data-close="settingsModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="setting-item">
+                    <label for="soundToggle">Sound Effects</label>
+                    <label class="toggle">
+                        <input type="checkbox" id="soundToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label for="notificationToggle">Notifications</label>
+                    <label class="toggle">
+                        <input type="checkbox" id="notificationToggle" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label for="notificationFreq">Notification Frequency</label>
+                    <select id="notificationFreq">
+                        <option value="30">Every 30 min</option>
+                        <option value="60" selected>Every hour</option>
+                        <option value="120">Every 2 hours</option>
+                    </select>
+                </div>
+                <div class="setting-actions">
+                    <button id="resetDayBtn" class="action-btn warning">Reset Today's EXP</button>
+                    <button id="viewHistoryBtn" class="action-btn">View History</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pro Modal -->
+    <div id="proModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Pro Features</h2>
+                <button class="close-btn" data-close="proModal">&times;</button>
+            </div>
+            <div class="modal-body pro-features">
+                <div class="pro-feature locked">
+                    <span class="feature-icon">📊</span>
+                    <span class="feature-text">Monthly Graphs</span>
+                    <span class="lock-icon">🔒</span>
+                </div>
+                <div class="pro-feature locked">
+                    <span class="feature-icon">⚙️</span>
+                    <span class="feature-text">Custom Boss Questions</span>
+                    <span class="lock-icon">🔒</span>
+                </div>
+                <div class="pro-feature locked">
+                    <span class="feature-icon">📈</span>
+                    <span class="feature-text">Advanced Statistics</span>
+                    <span class="lock-icon">🔒</span>
+                </div>
+                <div class="pro-feature locked">
+                    <span class="feature-icon">🎨</span>
+                    <span class="feature-text">Custom Themes</span>
+                    <span class="lock-icon">🔒</span>
+                </div>
+                <button class="buy-pro-btn">Buy Full Version - $4.99</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Boss Battle Modal -->
+    <div id="bossModal" class="modal">
+        <div class="modal-content boss-modal">
+            <div class="modal-header">
+                <h2 id="bossTitle">Daily Boss Battle</h2>
+                <div class="boss-progress">
+                    <span id="bossProgress">1/10</span>
+                </div>
+            </div>
+            <div class="modal-body">
+                <div class="boss-question">
+                    <p id="bossQuestion">Did you meditate or do breathwork for at least 10 minutes?</p>
+                </div>
+                <div class="boss-exp-info">
+                    <span class="yes-exp" id="yesExp">YES: +100 EXP</span>
+                    <span class="no-exp" id="noExp">NO: -200 EXP</span>
+                </div>
+                <div class="boss-buttons">
+                    <button id="bossYesBtn" class="boss-answer-btn yes">YES</button>
+                    <button id="bossNoBtn" class="boss-answer-btn no">NO</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Boss Complete Modal -->
+    <div id="bossCompleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Battle Complete!</h2>
+            </div>
+            <div class="modal-body boss-complete">
+                <div id="bossResult" class="boss-result">
+                    <span class="result-icon">⚔️</span>
+                    <span class="result-exp" id="resultExp">+500 EXP</span>
+                </div>
+                <p id="bossMessage">You defeated the Daily Boss!</p>
+                <button class="close-boss-btn" data-close="bossCompleteModal">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>History</h2>
+                <button class="close-btn" data-close="historyModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="historyList" class="history-list">
+                    <!-- History items will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Up Modal -->
+    <div id="levelUpModal" class="modal">
+        <div class="modal-content level-up">
+            <div class="level-up-content">
+                <div class="level-up-icon">⬆️</div>
+                <h2>LEVEL UP!</h2>
+                <div class="new-level">Level <span id="newLevel">2</span></div>
+                <button class="close-boss-btn" data-close="levelUpModal">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Boss Reminder Modal -->
+    <div id="bossReminderModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Boss Battles Await!</h2>
+                <button class="close-btn" data-close="bossReminderModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="reminder-text">You have pending boss battles. Tap to begin:</p>
+                <div id="pendingBattlesList" class="pending-battles">
+                    <!-- Populated dynamically -->
+                </div>
+                <button class="later-btn" data-close="bossReminderModal">Later</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio elements -->
+    <audio id="expUpSound" preload="auto">
+        <source src="audio/sfx_expup.ogg" type="audio/ogg">
+    </audio>
+    <audio id="expDownSound" preload="auto">
+        <source src="audio/sfx_expdown.ogg" type="audio/ogg">
+    </audio>
+
+    <script src="app.js"></script>
+</body>
+</html>
