@@ -275,6 +275,35 @@
         </div>
     </div>
 
+    <!-- Daily Quote Modal -->
+    <div id="quoteModal" class="modal mandatory">
+        <div class="quote-container">
+            <div class="quote-card">
+                <div class="quote-icon">💭</div>
+                <p id="dailyQuoteText" class="quote-text">Quote goes here</p>
+                <button id="dismissQuoteBtn" class="dismiss-quote-btn">→</button>
+            </div>
+            <p class="swipe-dismiss">Tap arrow or swipe to dismiss</p>
+        </div>
+    </div>
+
+    <!-- Awards Modal (Weekly/Monthly) -->
+    <div id="awardsModal" class="modal mandatory">
+        <div class="modal-content awards-modal">
+            <div class="modal-header">
+                <h2 id="awardsTitle">Weekly Rewards</h2>
+            </div>
+            <div class="modal-body">
+                <p class="awards-subtitle" id="awardsSubtitle">Based on your daily boss battles</p>
+                <div id="awardsList" class="awards-container">
+                    <!-- Awards populated dynamically -->
+                </div>
+                <div id="totalAwardsExp" class="total-awards-exp positive">Total: +500 EXP</div>
+                <button id="claimAwardsBtn" class="claim-awards-btn">Claim Rewards</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Level Up Modal -->
     <div id="levelUpModal" class="modal">
         <div class="modal-content level-up">

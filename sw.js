@@ -1,5 +1,5 @@
 // YOURPG Service Worker
-const CACHE_NAME = 'yourpg-v3';
+const CACHE_NAME = 'yourpg-v5';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',

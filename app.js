@@ -20,6 +20,8 @@ const DEFAULT_DATA = {
     lastActiveDate: null,
     onboardingComplete: false,
     customDailyQuestions: null, // null = use defaults, array = custom questions
+    dailyBossAnswers: {}, // Track daily answers: { "2026-01-23": [true, false, true, ...] }
+    lastQuoteDate: null, // Track when quote was last shown
     settings: {
         soundEnabled: true,
         notificationsEnabled: true,
@@ -69,9 +71,9 @@ const LEVEL_THRESHOLDS = [
 // Default Boss Battle Questions (can be customized by user)
 const DEFAULT_DAILY_BOSS_QUESTIONS = [
     "Did you meditate or do breathwork for at least 10 minutes?",
-    "Did you read or learn something new today?",
-    "Did you write down things you're grateful for?",
-    "Did you take action towards your goals today?",
+    "Did you read at least 10 pages of a non-fiction book?",
+    "Did you write down 5 things you are grateful for?",
+    "Did you spend at least 1 hour working on your goal?",
     "Did you exercise today?",
     "Did you avoid PMO (porn/masturbation)?",
     "Did you avoid consuming alcohol today?"
@@ -79,9 +81,9 @@ const DEFAULT_DAILY_BOSS_QUESTIONS = [
 
 const WEEKLY_BOSS_QUESTIONS = [
     "Did you get 7+ hours of sleep at least 4 out of 7 days?",
-    "Did you maintain a consistent wake time this week?",
+    "Did you wake up at the same time each day?",
     "Did you lift weights at least 3 times with intensity?",
-    "Did you do daily affirmations and visualization?",
+    "Did you do daily affirmations or visualization?",
     "Did you keep social media usage under 30 min/day?",
     "Did you dress well every day this week?",
     "Did you speak slower, deeper, and with certainty?",
@@ -90,6 +92,60 @@ const WEEKLY_BOSS_QUESTIONS = [
 
 const MONTHLY_BOSS_QUESTIONS = [
     "Did you make meaningful progress towards your dream life this month?"
+];
+
+// Daily Motivational Quotes
+const DAILY_QUOTES = [
+    "Waking up is not guaranteed. Millions went to sleep last night with plans and promises and never woke up.",
+    "You woke up not because you deserved it, but because there is still work left in you.",
+    "If waking up feels heavy, it is not because life is cruel. It is because you are misaligned.",
+    "Morning is where you either lead yourself or lose yourself.",
+    "Time is the most expensive currency in existence. It cannot be stored. It cannot be recovered.",
+    "You can think, you can choose, you can act. That is power. And power carries responsibility.",
+    "Training the body is not vanity. It is alignment. It is you telling the universe: I respect what I've been given.",
+    "Every time you train, you are not just lifting weight. You are lifting standards.",
+    "One missed workout becomes many. One indulgence becomes habit. One excuse becomes identity.",
+    "Pain is not the enemy. Weakness is. Discomfort is not a threat. Decay is.",
+    "Work is not a curse. It is permission to contribute, to build, to become useful.",
+    "Idleness destroys. Not because rest is bad, but because meaning requires effort.",
+    "Excellence is not about position. It is about presence.",
+    "Struggle is not evidence of failure. It is evidence of engagement. You only struggle with things that matter.",
+    "Steel is not hardened in softness. It is forged under heat and pressure.",
+    "Real freedom is the ability to choose discipline even when desire pulls the other way.",
+    "Without discipline, talent decays. Without discipline, opportunity collapses.",
+    "Discipline builds self-respect. You trust yourself because you keep promises to yourself.",
+    "Most regret is not caused by failure. It is caused by avoidance.",
+    "Confidence is not a prerequisite. It is a byproduct. It grows only after movement.",
+    "Later is the most dangerous word. Because later assumes certainty and certainty does not exist.",
+    "Time rewards consistency, not intensity. A little effort daily outperforms dramatic bursts followed by collapse.",
+    "There comes a moment when comfort begins to rot the soul.",
+    "That ache of potential buried alive is not anxiety. That is your calling to rise.",
+    "You are not ready for the blessings you pray for until you are strong enough to carry them.",
+    "Can you stay righteous when nobody's watching? Can you walk in integrity when compromise feels easier?",
+    "You asked for greatness. You're being given grit. You asked for success. You're being given strength.",
+    "Every sleepless night, every failure, every heartbreak is sacred construction.",
+    "Isolation is not punishment. It's purification.",
+    "In solitude, you learn that being alone isn't the same as being abandoned.",
+    "If you can't handle being unseen, you're not ready to be chosen.",
+    "Every delay is proof that heaven is still investing in you.",
+    "Discipline is not glamorous. It's gritty. It's repetitive. It's lonely. But it's the language heaven understands.",
+    "The blade must be heated and hammered again before it becomes sharp enough to serve its purpose.",
+    "If you are being tested severely, it's because you are being prepared for something powerful.",
+    "Pain is temporary. Discipline is eternal.",
+    "Many can climb, but few can stay clean at the top.",
+    "Comfort doesn't heal you. It hides you. It's the slowest form of decay.",
+    "Every time you choose ease over effort, you're feeding the version of yourself that must die.",
+    "You can't be powerful and pitiful at the same time.",
+    "Pain isn't punishment, it's payment. And discipline is the currency.",
+    "When your weakness dies, your clarity returns. When your addiction dies, your purpose breathes.",
+    "Until you conquer yourself, you will be conquered by everything.",
+    "What's built in silence always shakes the earth when it's revealed.",
+    "The cost of greatness is isolation. While others seek pleasure, you seek purpose.",
+    "Discipline is not chains, it's protection.",
+    "The difference between a child and an adult isn't age, money, or muscles. It's accountability.",
+    "Uncontrolled fire burns everything it touches. Controlled fire forges empires.",
+    "You were never being tested. You were being built.",
+    "The enemy doesn't come for the weak. It comes for the trusted. Guard your soul with vigilance."
 ];
 
 // Notification messages (Autopilot Breakers)
@@ -122,6 +178,7 @@ let appData = null;
 let currentBossType = null;
 let currentBossQuestion = 0;
 let bossExpTotal = 0;
+let currentBossAnswers = []; // Track answers for current daily boss battle
 
 // ============================================
 // Initialization
@@ -140,8 +197,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!appData.onboardingComplete) {
         initOnboarding();
     } else {
-        // Check for pending boss battles after a short delay
-        setTimeout(checkPendingBossBattles, 1000);
+        // Check for daily quote first, then boss battles
+        setTimeout(() => {
+            const today = getDateString();
+            if (appData.lastQuoteDate !== today) {
+                showDailyQuote();
+            } else {
+                checkPendingBossBattles();
+            }
+        }, 1000);
     }
 
     // Re-check for new day when app becomes visible (user switches back to app)
@@ -512,19 +576,23 @@ function startBossBattle(type) {
     currentBossType = type;
     currentBossQuestion = 0;
     bossExpTotal = 0;
+    currentBossAnswers = []; // Reset answers tracking
 
+    // Weekly and Monthly are now automatic award screens
+    if (type === 'weekly') {
+        showWeeklyAwards();
+        return;
+    }
+    if (type === 'monthly') {
+        showMonthlyAwards();
+        return;
+    }
+
+    // Daily boss battle (questions)
     const questions = getBossQuestions(type);
     const expValues = BOSS_EXP[type];
 
-    // Update modal title
-    const titles = {
-        daily: 'Daily Boss Battle',
-        weekly: 'Weekly Boss Battle',
-        monthly: 'Monthly Boss Battle'
-    };
-    document.getElementById('bossTitle').textContent = titles[type];
-
-    // Update EXP display
+    document.getElementById('bossTitle').textContent = 'Daily Boss Battle';
     document.getElementById('yesExp').textContent = `YES: +${expValues.yes} EXP`;
     document.getElementById('noExp').textContent = `NO: ${expValues.no} EXP`;
 
@@ -551,6 +619,9 @@ function showBossQuestion(questions, index) {
 function answerBossQuestion(answer) {
     const questions = getBossQuestions(currentBossType);
     const expValues = BOSS_EXP[currentBossType];
+
+    // Track the answer for daily boss
+    currentBossAnswers.push(answer);
 
     // Add EXP based on answer
     const expGain = answer ? expValues.yes : expValues.no;
@@ -579,6 +650,11 @@ function completeBossBattle() {
         case 'daily':
             appData.dailyBossCompleted = true;
             appData.lastDailyBoss = today;
+            // Save answers for weekly/monthly calculations
+            if (!appData.dailyBossAnswers) appData.dailyBossAnswers = {};
+            appData.dailyBossAnswers[today] = [...currentBossAnswers];
+            // Clean up old answers (keep last 35 days)
+            cleanupOldAnswers();
             break;
         case 'weekly':
             appData.weeklyBossCompleted = true;
@@ -608,12 +684,283 @@ function completeBossBattle() {
 
     const messages = {
         daily: bossExpTotal >= 0 ? 'You defeated the Daily Boss!' : 'The Daily Boss defeated you...',
-        weekly: bossExpTotal >= 0 ? 'You conquered the Weekly Boss!' : 'The Weekly Boss crushed you...',
-        monthly: bossExpTotal >= 0 ? 'You vanquished the Monthly Boss!' : 'The Monthly Boss destroyed you...'
+        weekly: bossExpTotal >= 0 ? 'Weekly rewards claimed!' : 'Keep pushing next week!',
+        monthly: bossExpTotal >= 0 ? 'Monthly rewards claimed!' : 'A new month awaits!'
     };
     document.getElementById('bossMessage').textContent = messages[currentBossType];
 
     openModal('bossCompleteModal');
+}
+
+function cleanupOldAnswers() {
+    if (!appData.dailyBossAnswers) return;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - 35);
+    const cutoffStr = cutoffDate.toISOString().split('T')[0];
+
+    Object.keys(appData.dailyBossAnswers).forEach(date => {
+        if (date < cutoffStr) {
+            delete appData.dailyBossAnswers[date];
+        }
+    });
+}
+
+// ============================================
+// Weekly & Monthly Awards System
+// ============================================
+
+// Stat descriptions for built-in questions (index -> description generator)
+const QUESTION_STAT_GENERATORS = {
+    0: (days) => `Meditated ${days} time${days !== 1 ? 's' : ''} this week`,
+    1: (days) => `Read ~${days * 10} pages this week`,
+    2: (days) => `Wrote ${days * 5} gratitudes this week`,
+    3: (days) => `Spent ~${days} hour${days !== 1 ? 's' : ''} on your goal`,
+    4: (days) => `Exercised ${days} time${days !== 1 ? 's' : ''} this week`,
+    5: (days) => `${days} day${days !== 1 ? 's' : ''} PMO-free`,
+    6: (days) => `${days} alcohol-free day${days !== 1 ? 's' : ''}`
+};
+
+const MONTHLY_STAT_GENERATORS = {
+    0: (days) => `Meditated ${days} time${days !== 1 ? 's' : ''} this month`,
+    1: (days) => `Read ~${days * 10} pages this month`,
+    2: (days) => `Wrote ${days * 5} gratitudes this month`,
+    3: (days) => `Spent ~${days} hour${days !== 1 ? 's' : ''} on your goal`,
+    4: (days) => `Exercised ${days} time${days !== 1 ? 's' : ''} this month`,
+    5: (days) => `${days} day${days !== 1 ? 's' : ''} PMO-free`,
+    6: (days) => `${days} alcohol-free day${days !== 1 ? 's' : ''}`
+};
+
+function getWeeklyThresholdExp(daysCompleted) {
+    if (daysCompleted >= 7) return 200;  // Perfect
+    if (daysCompleted >= 5) return 100;  // Strong
+    if (daysCompleted >= 3) return 50;   // Okay
+    return 0; // No reward
+}
+
+function getMonthlyThresholdExp(daysCompleted, totalDays) {
+    const percentage = daysCompleted / totalDays;
+    if (percentage >= 0.9) return 500;   // 90%+ Perfect
+    if (percentage >= 0.7) return 300;   // 70%+ Strong
+    if (percentage >= 0.5) return 150;   // 50%+ Okay
+    return 0; // No reward
+}
+
+function calculateWeeklyStats() {
+    const answers = appData.dailyBossAnswers || {};
+    const questions = getBossQuestions('daily');
+    const stats = [];
+
+    // Get dates for last 7 days
+    const dates = [];
+    for (let i = 0; i < 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        dates.push(d.toISOString().split('T')[0]);
+    }
+
+    // Calculate stats for each question
+    for (let qIndex = 0; qIndex < questions.length; qIndex++) {
+        let daysCompleted = 0;
+
+        dates.forEach(date => {
+            if (answers[date] && answers[date][qIndex] === true) {
+                daysCompleted++;
+            }
+        });
+
+        const exp = getWeeklyThresholdExp(daysCompleted);
+        const isCustom = appData.customDailyQuestions &&
+                         appData.customDailyQuestions[qIndex] !== DEFAULT_DAILY_BOSS_QUESTIONS[qIndex];
+
+        let description;
+        if (isCustom || !QUESTION_STAT_GENERATORS[qIndex]) {
+            description = `Completed ${daysCompleted}/7 days`;
+        } else {
+            description = QUESTION_STAT_GENERATORS[qIndex](daysCompleted);
+        }
+
+        stats.push({
+            question: questions[qIndex],
+            daysCompleted,
+            exp,
+            description,
+            isCustom
+        });
+    }
+
+    return stats;
+}
+
+function calculateMonthlyStats() {
+    const answers = appData.dailyBossAnswers || {};
+    const questions = getBossQuestions('daily');
+    const stats = [];
+
+    // Get dates for last 30 days
+    const dates = [];
+    for (let i = 0; i < 30; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        dates.push(d.toISOString().split('T')[0]);
+    }
+
+    // Count how many days have data
+    let daysWithData = 0;
+    dates.forEach(date => {
+        if (answers[date]) daysWithData++;
+    });
+
+    // Calculate stats for each question
+    for (let qIndex = 0; qIndex < questions.length; qIndex++) {
+        let daysCompleted = 0;
+
+        dates.forEach(date => {
+            if (answers[date] && answers[date][qIndex] === true) {
+                daysCompleted++;
+            }
+        });
+
+        const exp = getMonthlyThresholdExp(daysCompleted, Math.max(daysWithData, 1));
+        const isCustom = appData.customDailyQuestions &&
+                         appData.customDailyQuestions[qIndex] !== DEFAULT_DAILY_BOSS_QUESTIONS[qIndex];
+
+        let description;
+        if (isCustom || !MONTHLY_STAT_GENERATORS[qIndex]) {
+            description = `Completed ${daysCompleted}/${daysWithData} days`;
+        } else {
+            description = MONTHLY_STAT_GENERATORS[qIndex](daysCompleted);
+        }
+
+        stats.push({
+            question: questions[qIndex],
+            daysCompleted,
+            totalDays: daysWithData,
+            exp,
+            description,
+            isCustom
+        });
+    }
+
+    // Add hero/worm day count
+    let heroDays = 0;
+    let wormDays = 0;
+    appData.history.slice(0, 30).forEach(day => {
+        if (day.rating === 'HERO' || day.exp > 0) heroDays++;
+        else if (day.rating === 'WORM' || day.exp < 0) wormDays++;
+    });
+
+    return { questionStats: stats, heroDays, wormDays, totalDays: daysWithData };
+}
+
+function showWeeklyAwards() {
+    const stats = calculateWeeklyStats();
+    let totalExp = 0;
+
+    // Build awards HTML
+    let awardsHtml = '<div class="awards-list">';
+    stats.forEach(stat => {
+        totalExp += stat.exp;
+        const expClass = stat.exp > 0 ? 'positive' : 'zero';
+        const tierLabel = stat.daysCompleted >= 7 ? '★ PERFECT' :
+                          stat.daysCompleted >= 5 ? '◆ STRONG' :
+                          stat.daysCompleted >= 3 ? '○ OKAY' : '';
+
+        awardsHtml += `
+            <div class="award-item ${expClass}">
+                <div class="award-description">${stat.description}</div>
+                <div class="award-exp">${stat.exp > 0 ? '+' + stat.exp : stat.exp} EXP</div>
+                ${tierLabel ? `<div class="award-tier">${tierLabel}</div>` : ''}
+            </div>
+        `;
+    });
+    awardsHtml += '</div>';
+
+    // Update modal
+    document.getElementById('awardsTitle').textContent = 'Weekly Rewards';
+    document.getElementById('awardsSubtitle').textContent = 'Based on your daily boss battles';
+    document.getElementById('awardsList').innerHTML = awardsHtml;
+    document.getElementById('totalAwardsExp').textContent = `Total: +${totalExp} EXP`;
+    document.getElementById('totalAwardsExp').className = 'total-awards-exp ' + (totalExp > 0 ? 'positive' : '');
+
+    bossExpTotal = totalExp;
+    currentBossType = 'weekly';
+    openModal('awardsModal');
+}
+
+function showMonthlyAwards() {
+    const { questionStats, heroDays, wormDays, totalDays } = calculateMonthlyStats();
+    let totalExp = 0;
+
+    // Build awards HTML
+    let awardsHtml = '<div class="awards-list">';
+
+    // Hero/Worm summary
+    const heroBonus = heroDays >= 20 ? 300 : heroDays >= 15 ? 200 : heroDays >= 10 ? 100 : 0;
+    totalExp += heroBonus;
+    awardsHtml += `
+        <div class="award-item hero-summary ${heroBonus > 0 ? 'positive' : 'zero'}">
+            <div class="award-description">${heroDays} HERO days vs ${wormDays} WORM days</div>
+            <div class="award-exp">${heroBonus > 0 ? '+' + heroBonus : heroBonus} EXP</div>
+        </div>
+    `;
+
+    questionStats.forEach(stat => {
+        totalExp += stat.exp;
+        const expClass = stat.exp > 0 ? 'positive' : 'zero';
+
+        awardsHtml += `
+            <div class="award-item ${expClass}">
+                <div class="award-description">${stat.description}</div>
+                <div class="award-exp">${stat.exp > 0 ? '+' + stat.exp : stat.exp} EXP</div>
+            </div>
+        `;
+    });
+    awardsHtml += '</div>';
+
+    // Update modal
+    document.getElementById('awardsTitle').textContent = 'Monthly Rewards';
+    document.getElementById('awardsSubtitle').textContent = 'Your month in review';
+    document.getElementById('awardsList').innerHTML = awardsHtml;
+    document.getElementById('totalAwardsExp').textContent = `Total: +${totalExp} EXP`;
+    document.getElementById('totalAwardsExp').className = 'total-awards-exp ' + (totalExp > 0 ? 'positive' : '');
+
+    bossExpTotal = totalExp;
+    currentBossType = 'monthly';
+    openModal('awardsModal');
+}
+
+function claimAwards() {
+    closeModal('awardsModal');
+    completeBossBattle();
+}
+
+// ============================================
+// Daily Quote System
+// ============================================
+
+function checkDailyQuote() {
+    const today = getDateString();
+    if (appData.lastQuoteDate !== today) {
+        showDailyQuote();
+    }
+}
+
+function showDailyQuote() {
+    // Pick a random quote
+    const quote = DAILY_QUOTES[Math.floor(Math.random() * DAILY_QUOTES.length)];
+    document.getElementById('dailyQuoteText').textContent = quote;
+
+    // Mark as shown for today
+    appData.lastQuoteDate = getDateString();
+    saveData();
+
+    openModal('quoteModal');
+}
+
+function dismissQuote() {
+    closeModal('quoteModal');
+    // After quote is dismissed, check for pending boss battles
+    setTimeout(checkPendingBossBattles, 300);
 }
 
 // ============================================
@@ -1014,8 +1361,9 @@ function setupEventListeners() {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
             document.querySelectorAll('.modal.active').forEach(modal => {
-                // Don't close mandatory modals or boss battle modal with escape
-                if (modal.id !== 'bossModal' && modal.id !== 'bossReminderModal' && modal.id !== 'onboardingModal') {
+                // Don't close mandatory modals with escape
+                const mandatoryModals = ['bossModal', 'bossReminderModal', 'onboardingModal', 'awardsModal', 'quoteModal'];
+                if (!mandatoryModals.includes(modal.id)) {
                     closeModal(modal.id);
                 }
             });
@@ -1068,6 +1416,33 @@ function setupEventListeners() {
     const startJourneyBtn = document.getElementById('startJourneyBtn');
     if (startJourneyBtn) {
         startJourneyBtn.addEventListener('click', completeOnboarding);
+    }
+
+    // Claim awards button
+    const claimAwardsBtn = document.getElementById('claimAwardsBtn');
+    if (claimAwardsBtn) {
+        claimAwardsBtn.addEventListener('click', claimAwards);
+    }
+
+    // Dismiss quote button
+    const dismissQuoteBtn = document.getElementById('dismissQuoteBtn');
+    if (dismissQuoteBtn) {
+        dismissQuoteBtn.addEventListener('click', dismissQuote);
+    }
+
+    // Swipe to dismiss quote
+    const quoteModal = document.getElementById('quoteModal');
+    if (quoteModal) {
+        let quoteStartX = 0;
+        quoteModal.addEventListener('touchstart', (e) => {
+            quoteStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+        quoteModal.addEventListener('touchend', (e) => {
+            const diff = quoteStartX - e.changedTouches[0].screenX;
+            if (Math.abs(diff) > 50) {
+                dismissQuote();
+            }
+        }, { passive: true });
     }
 }
 
@@ -1197,13 +1572,14 @@ function showBossCustomization() {
     const currentQuestions = appData.customDailyQuestions || [...DEFAULT_DAILY_BOSS_QUESTIONS];
     editedQuestions = [...currentQuestions];
 
-    // Count already edited questions (different from defaults)
-    editCount = 0;
+    // Track which questions have been edited (different from defaults)
+    const editedIndices = [];
     for (let i = 0; i < currentQuestions.length; i++) {
         if (currentQuestions[i] !== DEFAULT_DAILY_BOSS_QUESTIONS[i]) {
-            editCount++;
+            editedIndices.push(i);
         }
     }
+    editCount = editedIndices.length;
 
     // Update edit limit text
     const remaining = appData.isPro ? 'all' : Math.max(0, MAX_FREE_EDITS - editCount);
@@ -1215,12 +1591,14 @@ function showBossCustomization() {
     // Build questions list
     questionsList.innerHTML = '';
     currentQuestions.forEach((question, index) => {
-        const isEdited = question !== DEFAULT_DAILY_BOSS_QUESTIONS[index];
-        const canEdit = appData.isPro || isEdited || editCount < MAX_FREE_EDITS;
+        const isAlreadyEdited = editedIndices.includes(index);
+        // Can edit if: Pro user OR already edited this one OR haven't hit limit yet
+        const canEdit = appData.isPro || isAlreadyEdited || editCount < MAX_FREE_EDITS;
 
         const item = document.createElement('div');
         item.className = 'question-item' + (canEdit ? '' : ' locked');
         item.dataset.index = index;
+        item.dataset.edited = isAlreadyEdited ? 'true' : 'false';
 
         item.innerHTML = `
             <span class="question-text">${question}</span>
@@ -1229,6 +1607,9 @@ function showBossCustomization() {
 
         if (canEdit) {
             item.addEventListener('click', () => editQuestion(index, item));
+        } else {
+            // Show upgrade prompt when clicking locked question
+            item.addEventListener('click', () => showProUpgradePrompt());
         }
 
         questionsList.appendChild(item);
@@ -1237,12 +1618,16 @@ function showBossCustomization() {
     openModal('bossCustomizeModal');
 }
 
+function showProUpgradePrompt() {
+    alert('Upgrade to Pro to customize all boss battle questions!');
+}
+
 function editQuestion(index, element) {
     // Check if already editing
     if (element.classList.contains('editing')) return;
 
-    const questionText = element.querySelector('.question-text');
     const currentText = editedQuestions[index];
+    const wasAlreadyEdited = element.dataset.edited === 'true';
 
     // Create input
     element.classList.add('editing');
@@ -1259,15 +1644,21 @@ function editQuestion(index, element) {
         const newText = input.value.trim();
         if (newText && newText !== currentText) {
             // Check if this is a new edit (not previously edited)
-            const wasEdited = editedQuestions[index] !== DEFAULT_DAILY_BOSS_QUESTIONS[index];
-            if (!wasEdited) {
+            if (!wasAlreadyEdited && newText !== DEFAULT_DAILY_BOSS_QUESTIONS[index]) {
                 editCount++;
+                element.dataset.edited = 'true';
+            }
+            // Check if reverted back to default
+            if (wasAlreadyEdited && newText === DEFAULT_DAILY_BOSS_QUESTIONS[index]) {
+                editCount--;
+                element.dataset.edited = 'false';
             }
             editedQuestions[index] = newText;
         }
 
         // Restore display
         element.classList.remove('editing');
+        const isEdited = editedQuestions[index] !== DEFAULT_DAILY_BOSS_QUESTIONS[index];
         element.innerHTML = `
             <span class="question-text">${editedQuestions[index]}</span>
             <span class="edit-indicator">✎</span>
@@ -1279,6 +1670,9 @@ function editQuestion(index, element) {
         // Update edit limit text
         const remaining = appData.isPro ? 'all' : Math.max(0, MAX_FREE_EDITS - editCount);
         document.getElementById('editLimitText').textContent = appData.isPro ? 'all' : remaining;
+
+        // Refresh locked states for other questions
+        refreshQuestionLockStates();
     });
 
     // Also save on Enter (but allow Shift+Enter for newlines)
@@ -1286,6 +1680,26 @@ function editQuestion(index, element) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             input.blur();
+        }
+    });
+}
+
+function refreshQuestionLockStates() {
+    const items = document.querySelectorAll('#questionsList .question-item');
+    items.forEach((item, index) => {
+        if (item.classList.contains('editing')) return; // Skip if editing
+
+        const isEdited = item.dataset.edited === 'true';
+        const canEdit = appData.isPro || isEdited || editCount < MAX_FREE_EDITS;
+
+        if (canEdit) {
+            item.classList.remove('locked');
+            const indicator = item.querySelector('.edit-indicator');
+            if (indicator) indicator.textContent = '✎';
+        } else {
+            item.classList.add('locked');
+            const indicator = item.querySelector('.edit-indicator');
+            if (indicator) indicator.textContent = '🔒';
         }
     });
 }
