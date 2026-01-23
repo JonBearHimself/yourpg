@@ -142,9 +142,17 @@
                         <option value="28">28th</option>
                     </select>
                 </div>
+                <div class="settings-divider">Boss Questions</div>
+                <div class="setting-actions">
+                    <button id="customizeBossBtn" class="action-btn">Customize Questions</button>
+                </div>
                 <div class="setting-actions">
                     <button id="resetDayBtn" class="action-btn warning">Reset Today's EXP</button>
                     <button id="viewHistoryBtn" class="action-btn">View Calendar</button>
+                </div>
+                <div class="settings-divider">Danger Zone</div>
+                <div class="setting-actions">
+                    <button id="wipeDataBtn" class="action-btn warning">Wipe All Local Data</button>
                 </div>
             </div>
         </div>
@@ -289,6 +297,163 @@
                 <p class="reminder-text">Complete your boss battles to continue:</p>
                 <div id="pendingBattlesList" class="pending-battles">
                     <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onboarding Modal (unskippable, swipeable cards) -->
+    <div id="onboardingModal" class="modal mandatory">
+        <div class="onboarding-container">
+            <div class="onboarding-cards" id="onboardingCards">
+                <!-- Card 1 -->
+                <div class="onboarding-card active" data-card="0">
+                    <div class="card-content">
+                        <h1 class="card-title gold">Are you a HERO or a WORM?</h1>
+                    </div>
+                </div>
+                <!-- Card 2 -->
+                <div class="onboarding-card" data-card="1">
+                    <div class="card-content">
+                        <p>Your mind is always seeking to preserve what is familiar since it is interpreted as <strong>safe</strong>, even if it's bad for you.</p>
+                    </div>
+                </div>
+                <!-- Card 3 -->
+                <div class="onboarding-card" data-card="2">
+                    <div class="card-content">
+                        <p>This app <strong>breaks the pattern</strong>.</p>
+                        <p class="mt">Assigning <span class="purple">minus EXP</span> means you make the choice to label that behavior as <strong>bad</strong>.</p>
+                    </div>
+                </div>
+                <!-- Card 4 -->
+                <div class="onboarding-card" data-card="3">
+                    <div class="card-content">
+                        <p>You will start to see junk food as <strong>poison</strong>.</p>
+                        <p class="purple mt">Worm behavior.</p>
+                        <p class="muted mt">Not as a delicious treat.</p>
+                    </div>
+                </div>
+                <!-- Card 5 -->
+                <div class="onboarding-card" data-card="4">
+                    <div class="card-content">
+                        <p>You will see alcohol as <strong>poison</strong>.</p>
+                        <p class="purple mt">Worm behavior.</p>
+                        <p class="muted mt">Not as a fun thing.</p>
+                    </div>
+                </div>
+                <!-- Card 6 -->
+                <div class="onboarding-card" data-card="5">
+                    <div class="card-content">
+                        <p>If these thoughts make you uncomfortable then you are <strong>not ready</strong> to be a hero.</p>
+                        <p class="muted mt">Delete this app and return to your worm life.</p>
+                        <p class="muted">You are not ready to awaken to the adventure of life.</p>
+                    </div>
+                </div>
+                <!-- Card 7 -->
+                <div class="onboarding-card" data-card="6">
+                    <div class="card-content">
+                        <h2 class="gold">But if you choose to stay...</h2>
+                    </div>
+                </div>
+                <!-- Card 8 -->
+                <div class="onboarding-card" data-card="7">
+                    <div class="card-content">
+                        <p>Within just <strong class="gold">3 days</strong> of using this app, you will be a stronger person.</p>
+                        <p class="mt">Within <strong class="gold">60 days</strong> you will be unrecognizable.</p>
+                        <p class="gold mt large">You will be a HERO.</p>
+                    </div>
+                </div>
+                <!-- Card 9 -->
+                <div class="onboarding-card" data-card="8">
+                    <div class="card-content">
+                        <p>Think of behaviors you want to do that award you <span class="gold">+EXP</span>.</p>
+                        <p class="muted mt">Is it worth +10 or +50?</p>
+                    </div>
+                </div>
+                <!-- Card 10 -->
+                <div class="onboarding-card" data-card="9">
+                    <div class="card-content examples">
+                        <p class="gold">+EXP Examples:</p>
+                        <ul>
+                            <li>Waking up earlier</li>
+                            <li>A 25 min study session</li>
+                            <li>Doing that task you avoid</li>
+                            <li>Eating real food</li>
+                            <li>Brushing teeth after meals</li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Card 11 -->
+                <div class="onboarding-card" data-card="10">
+                    <div class="card-content">
+                        <p>Now think of behaviors you want to <strong>stop</strong>.</p>
+                        <p class="muted mt">Is it -10 or -50 <span class="purple">EXP</span>?</p>
+                    </div>
+                </div>
+                <!-- Card 12 -->
+                <div class="onboarding-card" data-card="11">
+                    <div class="card-content examples">
+                        <p class="purple">-EXP Examples:</p>
+                        <ul>
+                            <li>Things that make you disgusting</li>
+                            <li>Eating processed junk</li>
+                            <li>Scrolling social media</li>
+                            <li>Taking life for granted</li>
+                        </ul>
+                    </div>
+                </div>
+                <!-- Card 13 -->
+                <div class="onboarding-card" data-card="12">
+                    <div class="card-content">
+                        <p>This app will send you <strong>notifications</strong> to break your autopilot.</p>
+                        <p class="mt">Award yourself for good behaviors. Punish the bad ones.</p>
+                    </div>
+                </div>
+                <!-- Card 14 -->
+                <div class="onboarding-card" data-card="13">
+                    <div class="card-content">
+                        <p>At the end of each day you face a <strong class="gold">Boss Battle</strong>.</p>
+                        <p class="mt">7 questions you answer truthfully.</p>
+                        <p class="muted mt">You can customize 2 of them.</p>
+                    </div>
+                </div>
+                <!-- Card 15 (Final) -->
+                <div class="onboarding-card" data-card="14">
+                    <div class="card-content">
+                        <p>This app works <strong>offline</strong>.</p>
+                        <p class="mt">No tracking. No data collection.</p>
+                        <p class="muted mt">Just notifications to keep you on track.</p>
+                        <button id="startJourneyBtn" class="start-btn gold-btn">BEGIN YOUR JOURNEY</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Progress dots -->
+            <div class="onboarding-progress" id="onboardingProgress">
+                <!-- Generated dynamically -->
+            </div>
+            <!-- Swipe hint -->
+            <div class="swipe-hint" id="swipeHint">Swipe to continue →</div>
+        </div>
+    </div>
+
+    <!-- Boss Customization Modal -->
+    <div id="bossCustomizeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Boss Questions</h2>
+                <button class="close-btn" data-close="bossCustomizeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="customize-info">You can customize <span id="editLimitText">2</span> questions. Tap to edit.</p>
+                <div id="questionsList" class="questions-list">
+                    <!-- Questions populated dynamically -->
+                </div>
+                <div class="customize-actions">
+                    <button id="resetQuestionsBtn" class="action-btn">Reset to Defaults</button>
+                    <button id="saveQuestionsBtn" class="action-btn gold-btn">Save Changes</button>
+                </div>
+                <div id="proUpgradeHint" class="pro-hint">
+                    <span>🔒</span> Upgrade to Pro to edit all questions
                 </div>
             </div>
         </div>

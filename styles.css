@@ -1021,3 +1021,289 @@ html, body {
 .later-btn:active {
     transform: scale(0.98);
 }
+
+/* ============================================
+   Onboarding Modal
+   ============================================ */
+.onboarding-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    position: relative;
+}
+
+.onboarding-cards {
+    width: 100%;
+    max-width: 360px;
+    height: 400px;
+    position: relative;
+    overflow: hidden;
+}
+
+.onboarding-card {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+.onboarding-card.active {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.onboarding-card.prev {
+    opacity: 0;
+    transform: translateX(-100%);
+}
+
+.card-content {
+    text-align: center;
+    padding: 20px;
+}
+
+.card-content h1 {
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.card-content h2 {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.card-content p {
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+.card-content .mt {
+    margin-top: 16px;
+}
+
+.card-content .muted {
+    color: var(--text-secondary);
+    font-size: 16px;
+}
+
+.card-content .gold {
+    color: var(--gold);
+}
+
+.card-content .purple {
+    color: var(--purple);
+}
+
+.card-content .large {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.card-content.examples ul {
+    text-align: left;
+    list-style: none;
+    padding: 0;
+    margin-top: 16px;
+}
+
+.card-content.examples li {
+    padding: 8px 0;
+    font-size: 16px;
+    border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.card-content.examples li:last-child {
+    border-bottom: none;
+}
+
+.card-title {
+    margin-bottom: 20px;
+}
+
+/* Onboarding Progress Dots */
+.onboarding-progress {
+    display: flex;
+    gap: 8px;
+    margin-top: 30px;
+}
+
+.progress-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    transition: all 0.3s ease;
+}
+
+.progress-dot.active {
+    background: var(--gold);
+    width: 24px;
+    border-radius: 4px;
+}
+
+.progress-dot.completed {
+    background: var(--text-secondary);
+}
+
+/* Swipe Hint */
+.swipe-hint {
+    position: absolute;
+    bottom: 80px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    animation: swipeHint 1.5s ease-in-out infinite;
+}
+
+@keyframes swipeHint {
+    0%, 100% { transform: translateX(0); opacity: 0.7; }
+    50% { transform: translateX(10px); opacity: 1; }
+}
+
+/* Start Journey Button */
+.start-btn {
+    margin-top: 30px;
+    padding: 18px 40px;
+    border: none;
+    border-radius: 14px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.start-btn.gold-btn {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    color: #1a1a2e;
+    box-shadow: 0 4px 20px var(--gold-glow);
+}
+
+.start-btn:active {
+    transform: scale(0.98);
+}
+
+/* ============================================
+   Boss Customization Modal
+   ============================================ */
+.customize-info {
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+.customize-info span {
+    color: var(--gold);
+    font-weight: 700;
+}
+
+.questions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.question-item {
+    padding: 14px;
+    background: var(--bg-tertiary);
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.4;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    position: relative;
+}
+
+.question-item:hover,
+.question-item:active {
+    border-color: var(--gold);
+}
+
+.question-item.editing {
+    border-color: var(--gold);
+    background: var(--bg-secondary);
+}
+
+.question-item.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.question-item.locked:hover {
+    border-color: transparent;
+}
+
+.question-item .question-text {
+    padding-right: 24px;
+}
+
+.question-item .edit-indicator {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--gold);
+    font-size: 12px;
+}
+
+.question-item.locked .edit-indicator {
+    color: var(--text-secondary);
+}
+
+.question-input {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    resize: none;
+}
+
+.question-input:focus {
+    outline: 2px solid var(--gold);
+}
+
+.customize-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.customize-actions .action-btn {
+    flex: 1;
+}
+
+.gold-btn {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark)) !important;
+    color: #1a1a2e !important;
+}
+
+.pro-hint {
+    margin-top: 16px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+}
+
+.pro-hint span {
+    margin-right: 6px;
+}

@@ -18,6 +18,8 @@ const DEFAULT_DATA = {
     lastWeeklyBoss: null,
     lastMonthlyBoss: null,
     lastActiveDate: null,
+    onboardingComplete: false,
+    customDailyQuestions: null, // null = use defaults, array = custom questions
     settings: {
         soundEnabled: true,
         notificationsEnabled: true,
@@ -64,18 +66,15 @@ const LEVEL_THRESHOLDS = [
     185000  // Level 30
 ];
 
-// Boss Battle Questions
-const DAILY_BOSS_QUESTIONS = [
+// Default Boss Battle Questions (can be customized by user)
+const DEFAULT_DAILY_BOSS_QUESTIONS = [
     "Did you meditate or do breathwork for at least 10 minutes?",
-    "Did you read at least 10 pages of non-fiction?",
-    "Did you write down 5 things you're grateful for?",
-    "Did you take action towards your dream life today?",
-    "Did you exercise today (weights, walk, or workout)?",
-    "Did you express genuine appreciation to someone?",
-    "Did you avoid watching porn today?",
-    "Did you avoid fapping today?",
-    "Did you dress well and groom yourself properly?",
-    "Did you maintain good posture, eye contact, and body language?"
+    "Did you read or learn something new today?",
+    "Did you write down things you're grateful for?",
+    "Did you take action towards your goals today?",
+    "Did you exercise today?",
+    "Did you avoid PMO (porn/masturbation)?",
+    "Did you avoid consuming alcohol today?"
 ];
 
 const WEEKLY_BOSS_QUESTIONS = [
@@ -136,8 +135,14 @@ document.addEventListener('DOMContentLoaded', () => {
     registerServiceWorker();
     initNotificationStatus();
     scheduleNotifications();
-    // Check for pending boss battles after a short delay
-    setTimeout(checkPendingBossBattles, 1000);
+
+    // Check if onboarding needed
+    if (!appData.onboardingComplete) {
+        initOnboarding();
+    } else {
+        // Check for pending boss battles after a short delay
+        setTimeout(checkPendingBossBattles, 1000);
+    }
 
     // Re-check for new day when app becomes visible (user switches back to app)
     document.addEventListener('visibilitychange', () => {
@@ -529,7 +534,9 @@ function startBossBattle(type) {
 
 function getBossQuestions(type) {
     switch (type) {
-        case 'daily': return DAILY_BOSS_QUESTIONS;
+        case 'daily':
+            // Use custom questions if set, otherwise use defaults
+            return appData.customDailyQuestions || DEFAULT_DAILY_BOSS_QUESTIONS;
         case 'weekly': return WEEKLY_BOSS_QUESTIONS;
         case 'monthly': return MONTHLY_BOSS_QUESTIONS;
         default: return [];
@@ -796,6 +803,15 @@ function resetDayExp() {
     }
 }
 
+function wipeAllData() {
+    if (confirm('WARNING: This will delete ALL your data including EXP, history, and settings. This cannot be undone!\n\nAre you sure?')) {
+        if (confirm('Are you REALLY sure? All progress will be lost forever.')) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+    }
+}
+
 // ============================================
 // Notifications
 // ============================================
@@ -975,6 +991,9 @@ function setupEventListeners() {
         showMyMonth();
     });
 
+    // Wipe all data button
+    document.getElementById('wipeDataBtn').addEventListener('click', wipeAllData);
+
     // Close buttons
     document.querySelectorAll('[data-close]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -996,7 +1015,7 @@ function setupEventListeners() {
         if (e.key === 'Escape') {
             document.querySelectorAll('.modal.active').forEach(modal => {
                 // Don't close mandatory modals or boss battle modal with escape
-                if (modal.id !== 'bossModal' && modal.id !== 'bossReminderModal') {
+                if (modal.id !== 'bossModal' && modal.id !== 'bossReminderModal' && modal.id !== 'onboardingModal') {
                     closeModal(modal.id);
                 }
             });
@@ -1024,4 +1043,273 @@ function setupEventListeners() {
         appData.settings.monthlyBossDay = e.target.value;
         saveData();
     });
+
+    // Boss customization (in settings)
+    const customizeBossBtn = document.getElementById('customizeBossBtn');
+    if (customizeBossBtn) {
+        customizeBossBtn.addEventListener('click', () => {
+            closeModal('settingsModal');
+            showBossCustomization();
+        });
+    }
+
+    // Save/Reset boss questions
+    const saveQuestionsBtn = document.getElementById('saveQuestionsBtn');
+    if (saveQuestionsBtn) {
+        saveQuestionsBtn.addEventListener('click', saveBossQuestions);
+    }
+
+    const resetQuestionsBtn = document.getElementById('resetQuestionsBtn');
+    if (resetQuestionsBtn) {
+        resetQuestionsBtn.addEventListener('click', resetBossQuestions);
+    }
+
+    // Onboarding start button
+    const startJourneyBtn = document.getElementById('startJourneyBtn');
+    if (startJourneyBtn) {
+        startJourneyBtn.addEventListener('click', completeOnboarding);
+    }
+}
+
+// ============================================
+// Onboarding System
+// ============================================
+
+let currentOnboardingCard = 0;
+const TOTAL_ONBOARDING_CARDS = 15;
+let touchStartX = 0;
+let touchEndX = 0;
+
+function initOnboarding() {
+    // Create progress dots
+    const progressContainer = document.getElementById('onboardingProgress');
+    progressContainer.innerHTML = '';
+    for (let i = 0; i < TOTAL_ONBOARDING_CARDS; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'progress-dot' + (i === 0 ? ' active' : '');
+        progressContainer.appendChild(dot);
+    }
+
+    // Set up swipe detection
+    const onboardingCards = document.getElementById('onboardingCards');
+
+    onboardingCards.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    onboardingCards.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleOnboardingSwipe();
+    }, { passive: true });
+
+    // Also allow tap to advance (except on last card)
+    onboardingCards.addEventListener('click', (e) => {
+        // Don't advance if clicking the button on last card
+        if (e.target.id === 'startJourneyBtn' || e.target.closest('.start-btn')) {
+            return;
+        }
+        if (currentOnboardingCard < TOTAL_ONBOARDING_CARDS - 1) {
+            goToOnboardingCard(currentOnboardingCard + 1);
+        }
+    });
+
+    // Show onboarding modal
+    openModal('onboardingModal');
+}
+
+function handleOnboardingSwipe() {
+    const swipeThreshold = 50;
+    const diff = touchStartX - touchEndX;
+
+    if (Math.abs(diff) > swipeThreshold) {
+        if (diff > 0) {
+            // Swiped left - go forward
+            if (currentOnboardingCard < TOTAL_ONBOARDING_CARDS - 1) {
+                goToOnboardingCard(currentOnboardingCard + 1);
+            }
+        } else {
+            // Swiped right - go back
+            if (currentOnboardingCard > 0) {
+                goToOnboardingCard(currentOnboardingCard - 1);
+            }
+        }
+    }
+}
+
+function goToOnboardingCard(index) {
+    const cards = document.querySelectorAll('.onboarding-card');
+    const dots = document.querySelectorAll('.progress-dot');
+    const swipeHint = document.getElementById('swipeHint');
+
+    // Update cards
+    cards.forEach((card, i) => {
+        card.classList.remove('active', 'prev');
+        if (i === index) {
+            card.classList.add('active');
+        } else if (i < index) {
+            card.classList.add('prev');
+        }
+    });
+
+    // Update progress dots
+    dots.forEach((dot, i) => {
+        dot.classList.remove('active', 'completed');
+        if (i === index) {
+            dot.classList.add('active');
+        } else if (i < index) {
+            dot.classList.add('completed');
+        }
+    });
+
+    // Hide swipe hint on last card
+    if (index === TOTAL_ONBOARDING_CARDS - 1) {
+        swipeHint.style.display = 'none';
+    } else {
+        swipeHint.style.display = 'block';
+    }
+
+    currentOnboardingCard = index;
+}
+
+function completeOnboarding() {
+    appData.onboardingComplete = true;
+    saveData();
+    closeModal('onboardingModal');
+
+    // Now check for pending boss battles
+    setTimeout(checkPendingBossBattles, 500);
+}
+
+// ============================================
+// Boss Question Customization
+// ============================================
+
+const MAX_FREE_EDITS = 2;
+let editedQuestions = [];
+let editCount = 0;
+
+function showBossCustomization() {
+    const questionsList = document.getElementById('questionsList');
+    const editLimitText = document.getElementById('editLimitText');
+    const proHint = document.getElementById('proUpgradeHint');
+
+    // Get current questions
+    const currentQuestions = appData.customDailyQuestions || [...DEFAULT_DAILY_BOSS_QUESTIONS];
+    editedQuestions = [...currentQuestions];
+
+    // Count already edited questions (different from defaults)
+    editCount = 0;
+    for (let i = 0; i < currentQuestions.length; i++) {
+        if (currentQuestions[i] !== DEFAULT_DAILY_BOSS_QUESTIONS[i]) {
+            editCount++;
+        }
+    }
+
+    // Update edit limit text
+    const remaining = appData.isPro ? 'all' : Math.max(0, MAX_FREE_EDITS - editCount);
+    editLimitText.textContent = appData.isPro ? 'all' : remaining;
+
+    // Show/hide pro hint
+    proHint.style.display = appData.isPro ? 'none' : 'block';
+
+    // Build questions list
+    questionsList.innerHTML = '';
+    currentQuestions.forEach((question, index) => {
+        const isEdited = question !== DEFAULT_DAILY_BOSS_QUESTIONS[index];
+        const canEdit = appData.isPro || isEdited || editCount < MAX_FREE_EDITS;
+
+        const item = document.createElement('div');
+        item.className = 'question-item' + (canEdit ? '' : ' locked');
+        item.dataset.index = index;
+
+        item.innerHTML = `
+            <span class="question-text">${question}</span>
+            <span class="edit-indicator">${canEdit ? '✎' : '🔒'}</span>
+        `;
+
+        if (canEdit) {
+            item.addEventListener('click', () => editQuestion(index, item));
+        }
+
+        questionsList.appendChild(item);
+    });
+
+    openModal('bossCustomizeModal');
+}
+
+function editQuestion(index, element) {
+    // Check if already editing
+    if (element.classList.contains('editing')) return;
+
+    const questionText = element.querySelector('.question-text');
+    const currentText = editedQuestions[index];
+
+    // Create input
+    element.classList.add('editing');
+    element.innerHTML = `
+        <textarea class="question-input" rows="3">${currentText}</textarea>
+    `;
+
+    const input = element.querySelector('.question-input');
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+
+    // Save on blur
+    input.addEventListener('blur', () => {
+        const newText = input.value.trim();
+        if (newText && newText !== currentText) {
+            // Check if this is a new edit (not previously edited)
+            const wasEdited = editedQuestions[index] !== DEFAULT_DAILY_BOSS_QUESTIONS[index];
+            if (!wasEdited) {
+                editCount++;
+            }
+            editedQuestions[index] = newText;
+        }
+
+        // Restore display
+        element.classList.remove('editing');
+        element.innerHTML = `
+            <span class="question-text">${editedQuestions[index]}</span>
+            <span class="edit-indicator">✎</span>
+        `;
+
+        // Re-attach click handler
+        element.addEventListener('click', () => editQuestion(index, element));
+
+        // Update edit limit text
+        const remaining = appData.isPro ? 'all' : Math.max(0, MAX_FREE_EDITS - editCount);
+        document.getElementById('editLimitText').textContent = appData.isPro ? 'all' : remaining;
+    });
+
+    // Also save on Enter (but allow Shift+Enter for newlines)
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            input.blur();
+        }
+    });
+}
+
+function saveBossQuestions() {
+    // Check if anything changed
+    const hasChanges = editedQuestions.some((q, i) => q !== DEFAULT_DAILY_BOSS_QUESTIONS[i]);
+
+    if (hasChanges) {
+        appData.customDailyQuestions = [...editedQuestions];
+    } else {
+        appData.customDailyQuestions = null; // Use defaults
+    }
+
+    saveData();
+    closeModal('bossCustomizeModal');
+}
+
+function resetBossQuestions() {
+    if (confirm('Reset all questions to defaults?')) {
+        appData.customDailyQuestions = null;
+        editedQuestions = [...DEFAULT_DAILY_BOSS_QUESTIONS];
+        editCount = 0;
+        saveData();
+        showBossCustomization(); // Refresh the list
+    }
 }
