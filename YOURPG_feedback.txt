@@ -1,0 +1,11 @@
+YOUrpg
+
+--
+Counter did not reset after midnight. Perhaps give user a setting for counter reset time. 
+calandar only shows the current day, doesn't actually progress streak.
+
+--
+I found that I use the app like this: Something I know is good for me but I often don't do - in my case take supplements, brush teeth after meal, study Japanese on anki. I then realize oh! how much exp would this be worth? Then I brush my teeth and give exp.
+
+I found that tasks I have been putting off, I ask myself what if this task is worth 200 exp? Then do the task.
+could add to notifications 'What task have you been putting off? How much exp is it worth?"

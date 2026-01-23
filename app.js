@@ -24,7 +24,8 @@ const DEFAULT_DATA = {
         notificationFrequency: 60,
         dailyBossTime: 21,      // 9 PM
         weeklyBossDay: 0,       // Sunday
-        monthlyBossDay: 'last'  // Last day of month
+        monthlyBossDay: 'last', // Last day of month
+        dailyResetTime: 0       // Midnight (0-23, hour when day resets)
     },
     isPro: false
 };
@@ -101,7 +102,10 @@ const NOTIFICATION_MESSAGES = [
     "What would the best version of you be doing right now?",
     "Is what you're doing moving you towards your goals?",
     "Are you being productive or just busy?",
-    "Would you be proud to tell someone what you did today?"
+    "Would you be proud to tell someone what you did today?",
+    "What task have you been putting off? How much EXP is it worth?",
+    "What's one small thing you could do right now for +10 EXP?",
+    "Is there something you know you should do but keep avoiding?"
 ];
 
 // EXP values for boss battles
@@ -134,6 +138,29 @@ document.addEventListener('DOMContentLoaded', () => {
     scheduleNotifications();
     // Check for pending boss battles after a short delay
     setTimeout(checkPendingBossBattles, 1000);
+
+    // Re-check for new day when app becomes visible (user switches back to app)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            const dayChanged = checkNewDay();
+            if (dayChanged) {
+                initializeUI();
+                checkPendingBossBattles();
+            } else {
+                // Even if day didn't change, re-check boss battles (time may have passed)
+                checkPendingBossBattles();
+            }
+        }
+    });
+
+    // Periodic check every minute (for apps left open)
+    setInterval(() => {
+        const dayChanged = checkNewDay();
+        if (dayChanged) {
+            initializeUI();
+        }
+        checkPendingBossBattles();
+    }, 60000);
 });
 
 function loadData() {
@@ -152,19 +179,37 @@ function saveData() {
 }
 
 function checkNewDay() {
-    const today = getDateString();
+    const resetTime = appData.settings.dailyResetTime || 0;
+    const now = new Date();
+    const currentHour = now.getHours();
+
+    // Calculate the "logical" date based on reset time
+    // If reset time is 4am and it's 2am, we're still on "yesterday"
+    let logicalDate = new Date(now);
+    if (currentHour < resetTime) {
+        logicalDate.setDate(logicalDate.getDate() - 1);
+    }
+    const today = logicalDate.toISOString().split('T')[0];
 
     if (appData.lastActiveDate !== today) {
-        // Save previous day to history if there was activity
-        if (appData.lastActiveDate && appData.currentDayExp !== 0) {
-            appData.history.unshift({
-                date: appData.lastActiveDate,
-                exp: appData.currentDayExp,
-                rating: appData.currentDayExp > 0 ? 'HERO' : 'WORM'
-            });
-            // Keep only last 30 days
-            if (appData.history.length > 30) {
-                appData.history = appData.history.slice(0, 30);
+        // Save previous day to history (even if EXP was 0, to track neutral days)
+        if (appData.lastActiveDate) {
+            // Check if this date is already in history
+            const existingEntry = appData.history.find(h => h.date === appData.lastActiveDate);
+            if (!existingEntry) {
+                let rating = 'NEUTRAL';
+                if (appData.currentDayExp > 0) rating = 'HERO';
+                else if (appData.currentDayExp < 0) rating = 'WORM';
+
+                appData.history.unshift({
+                    date: appData.lastActiveDate,
+                    exp: appData.currentDayExp,
+                    rating: rating
+                });
+                // Keep only last 90 days
+                if (appData.history.length > 90) {
+                    appData.history = appData.history.slice(0, 90);
+                }
             }
         }
 
@@ -172,10 +217,8 @@ function checkNewDay() {
         appData.currentDayExp = 0;
         appData.lastActiveDate = today;
 
-        // Check if daily boss should reset
-        if (appData.lastDailyBoss !== today) {
-            appData.dailyBossCompleted = false;
-        }
+        // Reset daily boss for new day
+        appData.dailyBossCompleted = false;
 
         // Check if weekly boss should reset
         const currentWeek = getWeekString();
@@ -190,7 +233,9 @@ function checkNewDay() {
         }
 
         saveData();
+        return true; // Day changed
     }
+    return false; // Day did not change
 }
 
 function initializeUI() {
@@ -287,8 +332,21 @@ function showBossReminder(battles) {
 // Date Utilities
 // ============================================
 
+function getLogicalDate() {
+    // Returns the "logical" date based on the daily reset time setting
+    // If reset time is 4am and current time is 2am, we're still on "yesterday"
+    const resetTime = appData.settings.dailyResetTime || 0;
+    const now = new Date();
+    let logicalDate = new Date(now);
+
+    if (now.getHours() < resetTime) {
+        logicalDate.setDate(logicalDate.getDate() - 1);
+    }
+    return logicalDate;
+}
+
 function getDateString() {
-    return new Date().toISOString().split('T')[0];
+    return getLogicalDate().toISOString().split('T')[0];
 }
 
 function getWeekString() {
@@ -366,6 +424,7 @@ function updateSettingsUI() {
     document.getElementById('dailyBossTime').value = appData.settings.dailyBossTime || 21;
     document.getElementById('weeklyBossDay').value = appData.settings.weeklyBossDay || 0;
     document.getElementById('monthlyBossDay').value = appData.settings.monthlyBossDay || 'last';
+    document.getElementById('dailyResetTime').value = appData.settings.dailyResetTime || 0;
 }
 
 function animateExpChange(element) {
@@ -602,15 +661,17 @@ function showMyMonth() {
         historyMap[item.date] = item;
     });
 
-    // Add today's data to map
+    // Add today's data to map (always, even if EXP is 0)
     const todayStr = getDateString();
-    if (appData.currentDayExp !== 0) {
-        historyMap[todayStr] = {
-            date: todayStr,
-            exp: appData.currentDayExp,
-            rating: appData.currentDayExp > 0 ? 'HERO' : 'WORM'
-        };
-    }
+    let todayRating = 'NEUTRAL';
+    if (appData.currentDayExp > 0) todayRating = 'HERO';
+    else if (appData.currentDayExp < 0) todayRating = 'WORM';
+
+    historyMap[todayStr] = {
+        date: todayStr,
+        exp: appData.currentDayExp,
+        rating: todayRating
+    };
 
     let html = '';
 
@@ -619,14 +680,27 @@ function showMyMonth() {
         html += '<div class="calendar-day empty"></div>';
     }
 
+    // Get the logical "today" (accounting for reset time)
+    const logicalToday = getLogicalDate();
+    const logicalTodayNum = logicalToday.getDate();
+    const logicalTodayMonth = logicalToday.getMonth();
+    const logicalTodayYear = logicalToday.getFullYear();
+
     // Days of month
     for (let day = 1; day <= daysInMonth; day++) {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const dayData = historyMap[dateStr];
 
         let classes = 'calendar-day';
-        if (day === today) classes += ' today';
-        if (day > today) classes += ' future';
+
+        // Check if this is today (using logical date)
+        const isToday = (day === logicalTodayNum && month === logicalTodayMonth && year === logicalTodayYear);
+        const isFuture = (year > logicalTodayYear) ||
+                        (year === logicalTodayYear && month > logicalTodayMonth) ||
+                        (year === logicalTodayYear && month === logicalTodayMonth && day > logicalTodayNum);
+
+        if (isToday) classes += ' today';
+        if (isFuture) classes += ' future';
 
         if (dayData) {
             if (dayData.rating === 'HERO' || dayData.exp > 0) {
@@ -647,41 +721,51 @@ function showMyMonth() {
 
 function calculateStreak() {
     let streak = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+
+    // Use the logical date (accounting for reset time)
+    const logicalToday = getLogicalDate();
+    logicalToday.setHours(0, 0, 0, 0);
+    const todayStr = getDateString();
 
     // Check if today is a hero day
     if (appData.currentDayExp > 0) {
         streak = 1;
-    } else if (appData.currentDayExp <= 0 && appData.currentDayExp !== 0) {
-        // Today is a worm day, streak broken
+    } else if (appData.currentDayExp < 0) {
+        // Today is a worm day, streak is 0
         return 0;
     }
+    // If currentDayExp === 0, we check history (day not counted yet)
 
-    // Check history backwards
-    const sortedHistory = [...appData.history].sort((a, b) =>
-        new Date(b.date) - new Date(a.date)
-    );
+    // Build a map of dates to their ratings for quick lookup
+    const dateRatings = {};
+    appData.history.forEach(item => {
+        dateRatings[item.date] = item.rating || (item.exp > 0 ? 'HERO' : (item.exp < 0 ? 'WORM' : 'NEUTRAL'));
+    });
 
-    let expectedDate = new Date(today);
-    if (streak === 1 || appData.currentDayExp === 0) {
-        expectedDate.setDate(expectedDate.getDate() - 1);
+    // Start checking from yesterday (or today if no activity yet)
+    let checkDate = new Date(logicalToday);
+    if (streak === 1) {
+        // Today is hero, start checking from yesterday
+        checkDate.setDate(checkDate.getDate() - 1);
+    } else if (appData.currentDayExp === 0) {
+        // No activity today, start from yesterday
+        checkDate.setDate(checkDate.getDate() - 1);
     }
 
-    for (const item of sortedHistory) {
-        const itemDate = new Date(item.date);
-        itemDate.setHours(0, 0, 0, 0);
+    // Check consecutive days backwards
+    for (let i = 0; i < 365; i++) { // Max 1 year back
+        const checkDateStr = checkDate.toISOString().split('T')[0];
+        const rating = dateRatings[checkDateStr];
 
-        // Check if this is the expected date
-        if (itemDate.getTime() === expectedDate.getTime()) {
-            if (item.rating === 'HERO' || item.exp > 0) {
-                streak++;
-                expectedDate.setDate(expectedDate.getDate() - 1);
-            } else {
-                break; // Streak broken
-            }
-        } else if (itemDate < expectedDate) {
-            break; // Gap in history, streak broken
+        if (rating === 'HERO') {
+            streak++;
+            checkDate.setDate(checkDate.getDate() - 1);
+        } else if (rating === 'WORM' || rating === 'NEUTRAL') {
+            // Streak broken by worm or neutral day
+            break;
+        } else {
+            // No data for this day (gap), streak broken
+            break;
         }
     }
 
@@ -917,6 +1001,12 @@ function setupEventListeners() {
                 }
             });
         }
+    });
+
+    // Day reset time setting
+    document.getElementById('dailyResetTime').addEventListener('change', (e) => {
+        appData.settings.dailyResetTime = parseInt(e.target.value);
+        saveData();
     });
 
     // Boss schedule settings
